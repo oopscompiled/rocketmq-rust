@@ -27,3 +27,62 @@ pub struct QueryAssignmentRequestBody {
     pub strategy_name: CheetahString,
     pub message_model: MessageModel,
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json;
+
+    #[test]
+    fn test_default_values() {
+        let body = QueryAssignmentRequestBody::default();
+
+        assert!(body.topic.is_empty());
+        assert!(body.consumer_group.is_empty());
+    }
+
+    #[test]
+    fn test_serialization_camel_case() {
+        let body = QueryAssignmentRequestBody {
+            topic: CheetahString::from("test-topic"),
+            consumer_group: CheetahString::from("group-a"),
+            client_id: CheetahString::from("client-123"),
+            strategy_name: CheetahString::from("avg"),
+            message_model: MessageModel::Clustering,
+        };
+
+        let json = serde_json::to_string(&body).unwrap();
+
+        assert!(json.contains("\"topic\""));
+        assert!(json.contains("\"consumerGroup\""));
+        assert!(json.contains("\"clientId\""));
+        assert!(json.contains("\"strategyName\""));
+        assert!(json.contains("\"messageModel\""));
+    }
+
+    #[test]
+    fn test_deserialization() {
+        let json = r#"{
+            "topic": "rocketmq-rust",
+            "consumerGroup": "test-group",
+            "clientId": "node-1",
+            "strategyName": "round-robin",
+            "messageModel": "MESSAGE"
+        }"#;
+
+        let decoded: QueryAssignmentRequestBody = serde_json::from_str(json).expect("Should deserialize");
+
+        assert_eq!(decoded.topic.as_str(), "rocketmq-rust");
+        assert_eq!(decoded.consumer_group.as_str(), "test-group");
+        assert_eq!(decoded.client_id.as_str(), "node-1");
+    }
+
+    #[test]
+    fn test_cheetah_string_from_string() {
+        let raw = String::from("performance_matters");
+        let cheetah = CheetahString::from(raw.clone());
+
+        assert_eq!(cheetah.as_str(), raw.as_str());
+        assert_eq!(cheetah.len(), raw.len());
+    }
+}
