@@ -33,41 +33,64 @@ mod tests {
     use super::*;
     use serde_json;
 
-    #[test]
-    fn test_default_values() {
-        let body = QueryAssignmentRequestBody::default();
-
-        assert!(body.topic.is_empty());
-        assert!(body.consumer_group.is_empty());
-    }
-
-    #[test]
-    fn test_serialization_camel_case() {
-        let body = QueryAssignmentRequestBody {
+    fn create_full_request() -> QueryAssignmentRequestBody {
+        QueryAssignmentRequestBody {
             topic: CheetahString::from("test-topic"),
             consumer_group: CheetahString::from("group-a"),
             client_id: CheetahString::from("client-123"),
             strategy_name: CheetahString::from("avg"),
             message_model: MessageModel::Clustering,
-        };
-
-        let json = serde_json::to_string(&body).unwrap();
-
-        assert!(json.contains("\"topic\""));
-        assert!(json.contains("\"consumerGroup\""));
-        assert!(json.contains("\"clientId\""));
-        assert!(json.contains("\"strategyName\""));
-        assert!(json.contains("\"messageModel\""));
+        }
     }
 
     #[test]
-    fn test_deserialization() {
+    fn test_default_values() {
+        let body = QueryAssignmentRequestBody::default();
+        assert!(body.topic.is_empty());
+        assert!(body.consumer_group.is_empty());
+        assert!(body.client_id.is_empty());
+        assert!(body.strategy_name.is_empty());
+    }
+
+    #[test]
+    fn test_clone_preservation() {
+        let original = create_full_request();
+        let cloned = original.clone();
+
+        assert_eq!(original.topic, cloned.topic);
+        assert_eq!(original.consumer_group, cloned.consumer_group);
+        assert_eq!(original.message_model, cloned.message_model);
+    }
+
+    #[test]
+    fn test_debug_output() {
+        let body = create_full_request();
+        let debug_str = format!("{:?}", body);
+
+        assert!(debug_str.contains("QueryAssignmentRequestBody"));
+        assert!(debug_str.contains("test-topic"));
+    }
+
+    #[test]
+    fn test_serde_roundtrip() {
+        let original = create_full_request();
+
+        let json = serde_json::to_string(&original).expect("Failed to serialize");
+        let recovered: QueryAssignmentRequestBody = serde_json::from_str(&json).expect("Failed to deserialize");
+
+        assert_eq!(original.topic, recovered.topic);
+        assert_eq!(original.strategy_name, recovered.strategy_name);
+        assert_eq!(original.message_model, recovered.message_model);
+    }
+
+    #[test]
+    fn test_deserialization_with_valid_enum() {
         let json = r#"{
             "topic": "rocketmq-rust",
             "consumerGroup": "test-group",
             "clientId": "node-1",
             "strategyName": "round-robin",
-            "messageModel": "MESSAGE"
+            "messageModel": "CLUSTERING"
         }"#;
 
         let decoded: QueryAssignmentRequestBody = serde_json::from_str(json).expect("Should deserialize");
@@ -75,14 +98,37 @@ mod tests {
         assert_eq!(decoded.topic.as_str(), "rocketmq-rust");
         assert_eq!(decoded.consumer_group.as_str(), "test-group");
         assert_eq!(decoded.client_id.as_str(), "node-1");
+        assert_eq!(decoded.strategy_name.as_str(), "round-robin");
+        assert_eq!(decoded.message_model, MessageModel::Clustering);
     }
 
     #[test]
-    fn test_cheetah_string_from_string() {
-        let raw = String::from("performance_matters");
-        let cheetah = CheetahString::from(raw.clone());
+    fn test_special_characters_and_empty_fields() {
+        let body = QueryAssignmentRequestBody {
+            topic: CheetahString::from(""),
+            consumer_group: CheetahString::from("!@#$%^&*()"),
+            client_id: CheetahString::from("   "),
+            strategy_name: CheetahString::from("🚀-strategy"),
+            message_model: MessageModel::Broadcasting,
+        };
 
-        assert_eq!(cheetah.as_str(), raw.as_str());
-        assert_eq!(cheetah.len(), raw.len());
+        let json = serde_json::to_string(&body).unwrap();
+        let decoded: QueryAssignmentRequestBody = serde_json::from_str(&json).unwrap();
+
+        assert_eq!(decoded.topic.as_str(), "");
+        assert_eq!(decoded.consumer_group.as_str(), "!@#$%^&*()");
+        assert_eq!(decoded.strategy_name.as_str(), "🚀-strategy");
+        assert_eq!(decoded.message_model, MessageModel::Broadcasting);
+    }
+
+    #[test]
+    fn test_serialization_camel_case_consistency() {
+        let body = create_full_request();
+        let json_value: serde_json::Value = serde_json::to_value(&body).unwrap();
+
+        assert!(json_value.get("consumerGroup").is_some());
+        assert!(json_value.get("strategyName").is_some());
+        assert!(json_value.get("messageModel").is_some());
+        assert!(json_value.get("consumer_group").is_none());
     }
 }
