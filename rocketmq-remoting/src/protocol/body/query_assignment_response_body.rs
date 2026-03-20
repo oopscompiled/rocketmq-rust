@@ -67,7 +67,6 @@ mod tests {
 
     #[test]
     fn query_assignment_response_body_deserialization() {
-        
         let json = r#"{
             "messageQueueAssignments": [
                 {
