@@ -32,10 +32,12 @@ mod tests {
 
     #[test]
     fn test_unlock_batch_mq_request_header_serialization() {
-        let mut rpc_header = RpcRequestHeader::default();
-        rpc_header.namespace = Some("test_ns".into());
-        rpc_header.broker_name = Some("broker_a".into());
-        rpc_header.oneway = Some(true);
+        let rpc_header = RpcRequestHeader {
+            namespace: Some("test_ns".into()),
+            broker_name: Some("broker_a".into()),
+            oneway: Some(true),
+            ..Default::default()
+        };
 
         let header = UnlockBatchMqRequestHeader {
             rpc_request_header: Some(rpc_header),
