@@ -294,16 +294,6 @@ pub trait MessageStoreInner: Sync + 'static {
         end: i64,
     ) -> Option<QueryMessageResult>;
 
-    /*/// Asynchronous query messages by given key.
-    async fn query_message_async(
-        &self,
-        topic: &str,
-        key: &str,
-        max_num: i32,
-        begin: i64,
-        end: i64,
-    ) -> Result<QueryMessageResult, StoreError>;*/
-
     /// Update HA master address.
     async fn update_ha_master_address(&self, new_addr: &str);
 
